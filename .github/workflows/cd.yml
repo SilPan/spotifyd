@@ -72,7 +72,7 @@ jobs:
           - build_target: linux-armv6
             artifact_type: 'full'               # Raspberry Pi toolchain is too old for dbus/systemd
     name: Publishing ${{ matrix.build_target }}-${{ matrix.artifact_type }}
-      runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Installing Rust toolchain
