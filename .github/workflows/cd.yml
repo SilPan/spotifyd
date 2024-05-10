@@ -15,7 +15,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y
 
     - name: Set up Rust
-      uses: actions/setup-rust@v2
+      uses: rust-build/rust-build.action@v1.4.5
       with:
         rust-version: stable
 
