@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build_target: [macos, linux, linux-armhf, linux-armv6]
+        build_target: [macos, linux, linux-armhf, linux-armv6, linux-arm64]
         rust: [stable]
         artifact_type: ['slim', 'default', 'full']  # The build strategy will build all types for each OS specified
         include:
@@ -37,6 +37,9 @@ jobs:
             os: ubuntu-18.04
             artifact_prefix: linux-armv6
             target: arm-unknown-linux-gnueabihf
+          - build_target: linux-armv8
+            os: ubuntu-18.04
+            target: aarch64-rpi3-linux-gnu  # from here: https://github.com/tttapa/docker-arm-cross-toolchain/tree/master/cmake
           - build_target: macos
             artifact_type: slim
             audio_backend: portaudio_backend
@@ -147,6 +150,27 @@ jobs:
           sudo ln -rs /build/sysroot/usr/lib/arm-linux-gnueabihf/liblz4.so.1 /build/sysroot/usr/lib/arm-linux-gnueabihf/liblz4.so
           sudo mkdir -p /.cargo
           echo -e '[target.arm-unknown-linux-gnueabihf.dbus]\nrustc-link-lib = ["dbus-1", "gcrypt", "gpg-error", "lz4", "lzma", "systemd"]' | sudo tee -a /.cargo/config
+      - name: Installing needed Ubuntu arm64 dependencies (full)
+        if: matrix.os == 'ubuntu-18.04' && matrix.build_target == 'linux-arm64' && matrix.artifact_type != 'slim'
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt-get download libdbus-1-dev:arm64 libdbus-1-3:arm64 libsystemd0:arm64 libgcrypt20:arm64 liblzma5:arm64 liblz4-1:arm64 libgpg-error0:arm64
+          sudo dpkg -x libdbus-1-3*.deb /build/sysroot/
+          sudo dpkg -x libdbus-1-dev*.deb /build/sysroot/
+          sudo dpkg -x libsystemd0*.deb /build/sysroot/
+          sudo dpkg -x libgcrypt20_*.deb /build/sysroot/
+          sudo dpkg -x liblzma5_*.deb /build/sysroot/
+          sudo dpkg -x liblz4-1_*.deb /build/sysroot/
+          sudo dpkg -x libgpg-error0_*.deb /build/sysroot/
+          sudo cp -r /build/sysroot/lib/* /build/sysroot/usr/lib/
+          sudo ln -frs /build/sysroot/lib/arm-linux-gnueabihf/libdbus-1.so.3 /build/sysroot/lib/arm-linux-gnueabihf/libdbus-1.so
+          sudo ln -rs /build/sysroot/lib/arm-linux-gnueabihf/libgcrypt.so.20 /build/sysroot/lib/arm-linux-gnueabihf/libgcrypt.so
+          sudo ln -rs /build/sysroot/lib/arm-linux-gnueabihf/libgpg-error.so.0 /build/sysroot/lib/arm-linux-gnueabihf/libgpg-error.so
+          sudo ln -rs /build/sysroot/lib/arm-linux-gnueabihf/liblzma.so.5 /build/sysroot/lib/arm-linux-gnueabihf/liblzma.so
+          sudo ln -rs /build/sysroot/lib/arm-linux-gnueabihf/libsystemd.so.0 /build/sysroot/lib/arm-linux-gnueabihf/libsystemd.so
+          sudo ln -rs /build/sysroot/usr/lib/arm-linux-gnueabihf/liblz4.so.1 /build/sysroot/usr/lib/arm-linux-gnueabihf/liblz4.so
+          sudo mkdir -p /.cargo
+          echo -e '[target.arm-unknown-linux-gnueabihf.dbus]\nrustc-link-lib = ["dbus-1", "gcrypt", "gpg-error", "lz4", "lzma", "systemd"]' | sudo tee -a /.cargo/config  
       - name: Checking out sources
         uses: actions/checkout@v1
       - name: Running cargo build
